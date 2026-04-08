@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login — Learning Analytics System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background: #1a2744; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-card { width: 100%; max-width: 420px; border-radius: 16px; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        .login-header { background: linear-gradient(135deg, #1a2744, #2d4a8a); color: white; border-radius: 16px 16px 0 0; padding: 2rem; text-align: center; }
+        .demo-box { background: #f8f9fa; border-radius: 8px; font-size: .85rem; }
+    </style>
+</head>
+<body>
+<div class="login-card card">
+    <div class="login-header">
+        <svg width="160" height="95" viewBox="0 0 160 95" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:0.75rem">
+
+            <!-- Single roof -->
+            <polygon points="5,26 80,4 155,26 155,31 5,31" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+
+            <!-- Pillar 1 (far left) -->
+            <rect x="8"   y="31" width="10" height="46" rx="2" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.8"/>
+            <!-- Pillar 2 -->
+            <rect x="58"  y="31" width="10" height="46" rx="2" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.8"/>
+            <!-- Pillar 3 -->
+            <rect x="108" y="31" width="10" height="46" rx="2" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.8"/>
+            <!-- Pillar 4 (far right) -->
+            <rect x="142" y="31" width="10" height="46" rx="2" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.8"/>
+
+            <!-- Base -->
+            <rect x="5" y="77" width="150" height="7" rx="2" fill="rgba(255,255,255,0.25)" stroke="white" stroke-width="1.8"/>
+
+            <!-- Midpoint between pillar 1 (right edge=18) and pillar 2 (left edge=58): mid = 38 -->
+            <text x="38"  y="59" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI, sans-serif" font-size="22" font-weight="900" fill="white">L</text>
+            <!-- Midpoint between pillar 2 (right edge=68) and pillar 3 (left edge=108): mid = 88 -->
+            <text x="88"  y="59" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI, sans-serif" font-size="22" font-weight="900" fill="white">A</text>
+            <!-- Midpoint between pillar 3 (right edge=118) and pillar 4 (left edge=142): mid = 130 -->
+            <text x="130" y="59" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI, sans-serif" font-size="22" font-weight="900" fill="white">S</text>
+
+        </svg>
+        <h4 class="mt-0 mb-1 fw-bold">Learning Analytics System</h4>
+        <p class="mb-0 opacity-75 small">Sign in to continue</p>
+    </div>
+    <div class="card-body p-4">
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" class="form-control" name="username" required autofocus>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control" name="password" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
+            </button>
+        </form>
+
+        <div class="demo-box mt-4 p-3">
+            <p class="mb-1 fw-semibold text-muted">Demo Accounts (password: <code>password</code>)</p>
+            <p class="mb-0">🎓 Teacher: <code>teacher1</code></p>
+            <p class="mb-0">👤 Student: <code>student1</code> … <code>student5</code></p>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

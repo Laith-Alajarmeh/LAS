@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}My Dashboard — LAS{% endblock %}
+
+{% block content %}
+<h4 class="page-header mb-4">
+    <i class="bi bi-person-circle me-2"></i>Welcome, {{ student.full_name }}
+    <small class="text-muted fs-6 ms-2">{{ student.student_number }} · {{ student.course }}</small>
+</h4>
+
+{% if at_risk %}
+<div class="alert alert-danger mb-4">
+    <strong><i class="bi bi-exclamation-triangle-fill me-2"></i>Action Needed</strong>
+    <ul class="mb-0 mt-1">
+        {% for r in reasons %}<li>{{ r }}</li>{% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card stat-card blue p-3">
+            <div class="text-muted small">Overall Average</div>
+            <div class="fs-2 fw-bold text-primary">{{ avg }}%</div>
+            <div class="small text-muted">{{ grade_label(avg) }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card {{ 'green' if attendance >= 80 else 'orange' if attendance >= 60 else 'red' }} p-3">
+            <div class="text-muted small">Attendance</div>
+            <div class="fs-2 fw-bold text-{{ 'success' if attendance >= 80 else 'warning' if attendance >= 60 else 'danger' }}">
+                {{ attendance }}%
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card {{ 'green' if not at_risk else 'red' }} p-3">
+            <div class="text-muted small">Status</div>
+            <div class="fs-5 fw-bold mt-1">
+                {% if at_risk %}
+                <span class="text-danger">⚠ At Risk</span>
+                {% else %}
+                <span class="text-success">✓ On Track</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card orange p-3">
+            <div class="text-muted small">Modules</div>
+            <div class="fs-2 fw-bold text-warning">{{ module_avgs|length }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="card p-3">
+            <h6 class="fw-semibold mb-3">Performance Trend</h6>
+            <div style="height:230px"><canvas id="trendChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3">
+            <h6 class="fw-semibold mb-3">Module Averages</h6>
+            {% for code, data in module_avgs.items() %}
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>{{ code }}</span>
+                    <span class="badge bg-{{ grade_colour(data.avg) }}">{{ data.avg }}%</span>
+                </div>
+                <div class="progress" style="height:8px">
+                    <div class="progress-bar bg-{{ grade_colour(data.avg) }}" style="width:{{ data.avg }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const dates  = {{ trend_dates|safe }};
+const scores = {{ trend_scores|safe }};
+
+new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+        labels: dates,
+        datasets: [{
+            label: 'Score (%)',
+            data: scores,
+            borderColor: '#4e79c5',
+            backgroundColor: 'rgba(78,121,197,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { min: 0, max: 100 } }
+    }
+});
+</script>
+{% endblock %}
