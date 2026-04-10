@@ -1,10 +1,15 @@
 # Models
+# These classes handle database queries for each main system entity
 
 from database import get_db
 
+
+# User model
+# Handles queries related to system users
 class User:
     @staticmethod
     def get_by_username(username):
+        # Find one user by username
         db = get_db()
         user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
         db.close()
@@ -12,15 +17,19 @@ class User:
 
     @staticmethod
     def get_by_id(user_id):
+        # Find one user by ID
         db = get_db()
         user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         db.close()
         return user
 
 
+# Student model
+# Handles queries related to student records
 class Student:
     @staticmethod
     def get_all():
+        # Get all students with linked user details
         db = get_db()
         students = db.execute('''
             SELECT s.id, s.student_number, s.course, s.year,
@@ -33,6 +42,7 @@ class Student:
 
     @staticmethod
     def get_by_user_id(user_id):
+        # Get student record using linked user ID
         db = get_db()
         student = db.execute('''
             SELECT s.id, s.student_number, s.course, s.year,
@@ -45,6 +55,7 @@ class Student:
 
     @staticmethod
     def get_by_id(student_id):
+        # Get student record by student ID
         db = get_db()
         student = db.execute('''
             SELECT s.id, s.student_number, s.course, s.year,
@@ -56,9 +67,13 @@ class Student:
         return student
 
 
+# Grade model
+# Handles queries related to assessment results
 class Grade:
     @staticmethod
     def get_by_student(student_id):
+        # Get all grades for one student
+        # Includes module name and code
         db = get_db()
         grades = db.execute('''
             SELECT g.*, m.name as module_name, m.code as module_code
@@ -71,6 +86,8 @@ class Grade:
 
     @staticmethod
     def get_all():
+        # Get all grades for all students
+        # Includes module and student details
         db = get_db()
         grades = db.execute('''
             SELECT g.*, m.name as module_name, m.code as module_code,
@@ -86,6 +103,8 @@ class Grade:
 
     @staticmethod
     def insert_many(rows):
+        # Insert multiple grade records at once
+        # Used for bulk CSV import
         db = get_db()
         db.executemany('''
             INSERT INTO grades (student_id, module_id, assessment_name, score, max_score, date)
@@ -95,9 +114,12 @@ class Grade:
         db.close()
 
 
+# Module model
+# Handles queries related to academic modules
 class Module:
     @staticmethod
     def get_all():
+        # Get all modules
         db = get_db()
         modules = db.execute("SELECT * FROM modules").fetchall()
         db.close()
@@ -105,15 +127,20 @@ class Module:
 
     @staticmethod
     def get_by_id(module_id):
+        # Get one module by ID
         db = get_db()
         module = db.execute("SELECT * FROM modules WHERE id = ?", (module_id,)).fetchone()
         db.close()
         return module
 
 
+# Attendance model
+# Handles queries related to attendance records
 class Attendance:
     @staticmethod
     def get_by_student(student_id):
+        # Get all attendance records for one student
+        # Includes module name and code
         db = get_db()
         records = db.execute('''
             SELECT a.*, m.name as module_name, m.code as module_code
@@ -126,6 +153,8 @@ class Attendance:
 
     @staticmethod
     def get_summary_by_student(student_id):
+        # Get attendance summary for one student
+        # Counts present, absent, late, and total records
         db = get_db()
         summary = db.execute('''
             SELECT

@@ -1,51 +1,92 @@
-﻿from flask import Flask, render_template, request, redirect, url_for, session, flash, Response
+﻿# Import Flask framework
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response
+
+# Authentication (password checking)
 from werkzeug.security import check_password_hash
+
+# For graphs/dashboard chart data
 import json
+
+# Dynamic file path handling
 import os
 
+# Make sure templates are located correctly regardless of where the app runs
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Database initialisation
 from database import init_db
+
+# Data models (system entities)
 from models import User, Student, Grade, Module, Attendance
+
+# Analytics functions
 from analytics import (get_student_avg, get_attendance_rate, is_at_risk,
                        get_all_students_summary, get_grade_distribution,
                        get_class_performance, get_performance_trend,
                        get_module_averages)
+
+# Reporting functions
 from reporting import export_grades_csv, import_grades_csv, import_students_csv, generate_student_report
+
+# Utility functions
 from utils import login_required, teacher_required, grade_label, grade_colour
 
+# Create Flask app
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
+
+# Secret key for session management (login)
 app.secret_key = 'las-secret-key-change-in-production'
 
-# ─── Auth ────────────────────────────────────────────────────────────────────
 
+# Home page
+# If the user is logged in, go to dashboard; otherwise go to login
 @app.route('/')
 def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
+
+# Login page
+# Show login template and process username/password input
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        # Read and clean login data
         username = request.form['username'].strip()
         password = request.form['password']
+
+        # Search for username in database
         user = User.get_by_username(username)
+
+        # Check hashed password
         if user and check_password_hash(user['password'], password):
+            # If login is successful, store user details in session
             session['user_id'] = user['id']
             session['role'] = user['role']
             session['full_name'] = user['full_name']
+
+            # Redirect to role-based dashboard (teacher/student)
             return redirect(url_for('dashboard'))
+
+        # Error message for invalid login
         flash('Invalid username or password.', 'danger')
+
+    # Render login page
     return render_template('login.html')
 
+
+# Logout
+# Clear current session and send user back to login
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# ─── Dashboard ───────────────────────────────────────────────────────────────
 
+# Main dashboard
+# Only accessible to authenticated users
+# Redirect depends on user role
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -54,21 +95,30 @@ def dashboard():
     else:
         return redirect(url_for('student_dashboard'))
 
+
+# Teacher dashboard
+# Only accessible if the user role is teacher
 @app.route('/teacher/dashboard')
 @teacher_required
 def teacher_dashboard():
+    # Get analysis summary for all students
     students = get_all_students_summary()
+
+    # Filter students flagged as at risk
     at_risk_students = [s for s in students if s['at_risk']]
+
+    # Get class-wide module performance data
     class_perf = get_class_performance()
 
-    # Chart data - class averages per module
+    # Prepare chart data for module average chart
     module_labels = [r['code'] for r in class_perf]
     module_avgs = [r['avg_score'] for r in class_perf]
 
-    # Grade distribution across all students
+    # Prepare chart data for student average distribution
     all_avgs = [s['avg_grade'] for s in students]
     student_names = [s['name'].split()[0] for s in students]
 
+    # Render dashboard and pass data to template
     return render_template('teacher_dashboard.html',
         students=students,
         at_risk_students=at_risk_students,
@@ -81,20 +131,28 @@ def teacher_dashboard():
         grade_colour=grade_colour
     )
 
+
+# Student dashboard
+# Shows analytics for the logged-in student
 @app.route('/student/dashboard')
 @login_required
 def student_dashboard():
+    # Find student record for logged-in user
     student = Student.get_by_user_id(session['user_id'])
+
+    # If no matching student exists, show error and return to login
     if not student:
         flash('Student record not found.', 'danger')
         return redirect(url_for('login'))
 
+    # Calculate student-specific analytics
     avg = get_student_avg(student['id'])
     attendance = get_attendance_rate(student['id'])
     at_risk, reasons = is_at_risk(student['id'])
     module_avgs = get_module_averages(student['id'])
     dates, scores = get_performance_trend(student['id'])
 
+    # Render dashboard with analytics and chart data
     return render_template('student_dashboard.html',
         student=student,
         avg=avg,
@@ -108,16 +166,21 @@ def student_dashboard():
         grade_colour=grade_colour
     )
 
-# ─── Student detail (teacher view) ───────────────────────────────────────────
 
+# Teacher-only route
+# View full details for a specific student
 @app.route('/teacher/student/<int:student_id>')
 @teacher_required
 def student_detail(student_id):
+    # Retrieve student by ID
     student = Student.get_by_id(student_id)
+
+    # Handle invalid student ID
     if not student:
         flash('Student not found.', 'danger')
         return redirect(url_for('teacher_dashboard'))
 
+    # Generate full analytics for selected student
     avg = get_student_avg(student_id)
     attendance = get_attendance_rate(student_id)
     at_risk, reasons = is_at_risk(student_id)
@@ -127,6 +190,7 @@ def student_detail(student_id):
     dates, scores = get_performance_trend(student_id)
     labels, grade_scores = get_grade_distribution(student_id)
 
+    # Render detailed student analytics page
     return render_template('student_detail.html',
         student=student,
         avg=avg,
@@ -144,38 +208,65 @@ def student_detail(student_id):
         grade_colour=grade_colour
     )
 
-# ─── CSV Import / Export ─────────────────────────────────────────────────────
 
+# Import student data from CSV file
+# Teacher access only
 @app.route('/teacher/import/students', methods=['GET', 'POST'])
 @teacher_required
 def import_students():
     if request.method == 'POST':
+        # Retrieve uploaded file from form
         file = request.files.get('csv_file')
+
+        # Check that a file was selected
         if not file or file.filename == '':
             flash('Please select a CSV file.', 'warning')
             return redirect(request.url)
+
+        # Import students and capture success/error counts
         success, errors = import_students_csv(file.stream)
+
+        # Show feedback messages
         flash(f'Added {success} student(s) successfully.', 'success')
         for err in errors:
             flash(err, 'danger')
+
         return redirect(url_for('teacher_dashboard'))
+
+    # Show upload form
     return render_template('import_students.html')
 
+
+# Import grade data from CSV file
+# Teacher access only
 @app.route('/teacher/import', methods=['GET', 'POST'])
 @teacher_required
 def import_csv():
     if request.method == 'POST':
+        # Retrieve uploaded CSV file
         file = request.files.get('csv_file')
+
+        # Check that a file was selected
         if not file or file.filename == '':
             flash('Please select a CSV file.', 'warning')
             return redirect(request.url)
+
+        # Import grades and capture success/error counts
         success, errors = import_grades_csv(file.stream)
+
+        # Show feedback messages
         flash(f'Imported {success} grade(s) successfully.', 'success')
         for err in errors:
             flash(err, 'danger')
+
         return redirect(url_for('teacher_dashboard'))
+
+    # Show upload form
     return render_template('import_csv.html')
 
+
+# Export all grades as CSV
+# Teacher access only
 @app.route('/teacher/export')
 @teacher_required
 def export_csv():
@@ -183,29 +274,44 @@ def export_csv():
     return Response(csv_data, mimetype='text/csv',
                     headers={'Content-Disposition': 'attachment; filename=grades_export.csv'})
 
+
+# Export a specific student's grades as CSV
+# Teacher access only
 @app.route('/teacher/export/<int:student_id>')
 @teacher_required
 def export_student_csv(student_id):
+    # Check student exists
     student = Student.get_by_id(student_id)
     if not student:
         flash('Student not found.', 'danger')
         return redirect(url_for('teacher_dashboard'))
+
+    # Export selected student's grades
     csv_data = export_grades_csv(student_id)
     filename = f"{student['student_number']}_grades.csv"
+
     return Response(csv_data, mimetype='text/csv',
                     headers={'Content-Disposition': f'attachment; filename={filename}'})
 
+
+# Download a text report for a specific student
+# Teacher access only
 @app.route('/teacher/report/<int:student_id>')
 @teacher_required
 def download_report(student_id):
+    # Generate report content
     report = generate_student_report(student_id)
+
+    # Get student information for file naming
     student = Student.get_by_id(student_id)
     filename = f"{student['student_number']}_report.txt"
+
     return Response(report, mimetype='text/plain',
                     headers={'Content-Disposition': f'attachment; filename={filename}'})
 
-# ─── Run ─────────────────────────────────────────────────────────────────────
 
+# Run application
+# Initialise database and start Flask development server
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
